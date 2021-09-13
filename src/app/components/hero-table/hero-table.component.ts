@@ -11,6 +11,7 @@ export class HeroTableComponent implements OnInit {
     search$ = this.hero.searchBs;
     page$ = this.hero.userPage$;
     totalResults$ = this.hero.totalResults$;
+    totalPages$ = this.hero.totalPages$;
 
     constructor(public hero: HeroService) {}
 
@@ -18,5 +19,10 @@ export class HeroTableComponent implements OnInit {
 
     doSearch(event: any) {
         this.hero.searchBs.next(event.target.value);
+    }
+
+    movePageBy(moveBy: number) {
+        const currenPage = this.hero.pageBs.getValue();
+        this.hero.pageBs.next(currenPage + moveBy);
     }
 }

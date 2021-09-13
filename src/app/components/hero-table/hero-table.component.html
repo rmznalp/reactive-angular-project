@@ -8,8 +8,9 @@
         <span class="page-tool">
             <label>Page {{page$ | async}} of {{totalPages$ | async}} : </label>
             <span class="buttons">
-                <button class="prev">Prev</button>
-                <button class="next">Next</button>
+                <button class="prev" (click)="movePageBy(-1)" [disabled]="(page$ | async) === 1 ">Prev</button>
+                <button class="next" (click)="movePageBy(1)"
+                    [disabled]="(page$ | async) === (totalPages$ | async) ">Next</button>
             </span>
         </span>
         <span class="result-tool">

@@ -91,5 +91,9 @@ export class HeroService {
         }),
     );
 
+    totalPages$ = combineLatest([this.totalResults$, this.limitBs]).pipe(
+        map(([totalResults, limit]) => Math.ceil(totalResults / limit)),
+    );
+
     constructor(private http: HttpClient) {}
 }
