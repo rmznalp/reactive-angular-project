@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { BehaviorSubject, combineLatest, Observable } from 'rxjs';
+import { debounceTime, map, shareReplay, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
 export interface Hero {
@@ -47,17 +47,49 @@ const LIMITS = [LIMIT_LOW, LIMIT_MID, LIMIT_HIGH];
 })
 export class HeroService {
     limits = LIMITS;
+    DEFAULT_LIMIT = LIMIT_HIGH;
+    DEFAULT_SEARCH = '';
+    DEFAULT_PAGE = 0;
 
-    heroes$: Observable<Hero[]> = this.http
-        .get(HERO_API, {
-            params: {
+    searchBs = new BehaviorSubject(this.DEFAULT_SEARCH);
+    limitBs = new BehaviorSubject(this.DEFAULT_LIMIT);
+    pageBs = new BehaviorSubject(this.DEFAULT_PAGE);
+    userPage$ = this.pageBs.pipe(map(page => page + 1));
+
+    params$ = combineLatest([this.searchBs, this.limitBs, this.pageBs]).pipe(
+        map(([searchTerm, limit, page]) => {
+            const params: any = {
                 apikey: environment.MARVEL_API.PUBLIC_KEY,
                 limit: `${LIMIT_LOW}`,
                 // nameStartsWith: 'iron', // once we have search
-                offset: `${0}`, // page * limit
-            },
-        })
-        .pipe(map((res: any) => res.data.results));
+                offset: `${page * limit}`, // page * limit
+            };
+            if (searchTerm.length) {
+                params.nameStartsWith = searchTerm;
+            }
+            return params;
+        }),
+    );
+
+    private heroesResponse$ = this.params$.pipe(
+        debounceTime(500),
+        switchMap(_params =>
+            this.http.get(HERO_API, {
+                params: _params,
+            }),
+        ),
+        shareReplay(1),
+    );
+
+    totalResults$ = this.heroesResponse$.pipe(
+        map((res: any) => res.data.total),
+    );
+
+    heroes$: Observable<Hero[]> = this.heroesResponse$.pipe(
+        map((res: any) => {
+            return res.data.results;
+        }),
+    );
 
     constructor(private http: HttpClient) {}
 }
